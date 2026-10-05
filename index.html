@@ -145,7 +145,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 </main>
 <script>
-const API_URL='https://script.google.com/macros/s/AKfycbwUkabD_vRCDRM88iRLLidwSXk-5jUi2vPo7E0fkf9dSqf19ne82YtCRhomGv4q00ZU4g/exec';// วางที่อยู่ Web App ของ Apps Script ที่นี่ (ดู README)
+const API_URL='https://script.google.com/macros/s/AKfycbwUkabD_vRCDRM88iRLLidwSXk-5jUi2vPo7E0fkf9dSqf19ne82YtCRhomGv4q00ZU4g/exec';
 const $=i=>document.getElementById(i),DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],TH=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 let secs=[],raw=[],booked=[],cancelled=[],DB={terms:[],cur:null},CFG={url:API_URL,code:'',who:''},ME={admin:false,ok:false},SV=null,BV=null,TOK=null,want=null,IMP=[];
 try{DB.cur=localStorage.getItem('mkcur');CFG.code=localStorage.getItem('mkcode')||'';CFG.who=localStorage.getItem('mkwho')||'';if(!CFG.url)CFG.url=localStorage.getItem('mkurl')||'';TOK=sessionStorage.getItem('mktok')}catch(e){}
@@ -196,8 +196,7 @@ const sections=IMP.map(s=>({code:s.code,sec:s.sec,day:s.day,s:s.s,e:s.e,ids:[...
 if(!sections.length){say('ไม่พบข้อมูลกลุ่มเรียนในไฟล์');return}
 say('กำลังบันทึกขึ้นระบบ...');const j=await call('importSections',{term:DB.cur,sections});
 if(j){SV=null;await poll();say(bad?`อ่านไฟล์ไม่ได้ ${bad} ไฟล์`:'นำเข้าข้อมูลเรียบร้อย')}}
-function refresh(){clampWk();syncRange();const t=T(),st=new Set(),v=$('sec').value;secs.forEach(s=>s.ids.forEach(i=>st.add(i)));
-$('tsel').innerHTML=DB.terms.map(x=>`<option value="${esc(x.id)}" ${x.id===DB.cur?'selected':''}>${esc(x.name)}</option>`).join('')||'<option value="">ยังไม่มีเทอม</option>';
+function refresh(){clampWk();syncRange();const t=T(),st=new Set(),v=$('sec').value;secs.forEach(s=>s.ids.forEach(i=>st.add(i)));$('tsel').innerHTML=DB.terms.map(x=>`<option value="${esc(x.id)}" ${x.id===DB.cur?'selected':''}>${esc(x.name)}</option>`).join('')||'<option value="">ยังไม่มีเทอม</option>';
 $('st').textContent=t?`เทอม ${t.name}: ${secs.length} กลุ่มเรียน นักศึกษา ${st.size} คน`:!ME.ok?'กรอกการเชื่อมต่อด้านบนแล้วกดเชื่อมต่อ':ME.admin?'สร้างเทอมก่อน แล้วจึงอัปโหลดรายชื่อ':'ยังไม่มีข้อมูล รอผู้ดูแลระบบนำเข้าข้อมูล';
 $('sec').innerHTML=secs.map(s=>`<option value="${esc(key(s))}">${esc(key(s))} · ${TH[s.day]} ${fm(s.s)}-${fm(s.e)} (${s.ids.size} คน)</option>`).join('');if(secs.some(s=>key(s)===v))$('sec').value=v;
 gate();renderWeek();if(!$('view-compare').hidden)renderCompareList()}
@@ -328,63 +327,4 @@ refresh();draw();applyLang();
 if(CFG.url&&CFG.code)poll();else $('cfgd').open=true;
 setInterval(()=>{if(!document.hidden)poll()},10000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
-  <script>
-  // 1. กำหนด URL และ Access Code ให้ตรงกับที่คุณตั้งไว้
-  const API_URL = "https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec";
-  const ACCESS_CODE = "รหัสเข้าใช้ที่ตั้งในScriptProperties"; // ต้องตรงกับ ACCESS_CODE ใน Apps Script
-
-  // 2. ฟังก์ชันกลางสำหรับส่งข้อมูลไปยัง Apps Script
-  async function sendToBackend(actionName, data = {}) {
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          code: ACCESS_CODE,  // รหัสผ่านเข้าใช้งานระบบ
-          action: actionName, // ชื่องานที่ต้องการให้ Apps Script ทำ
-          ...data             // ข้อมูลอื่นๆ ที่ส่งไป
-        })
-      });
-
-      const result = await response.json();
-      return result;
-    } catch (err) {
-      console.error("เกิดข้อผิดพลาดในการเชื่อมต่อ:", err);
-      return { ok: false, error: "network_error" };
-    }
-  }
-
-  // ----------------------------------------------------
-  // 3. ตัวอย่างการเรียกใช้งานฟังก์ชันในรูปแบบต่างๆ
-  // ----------------------------------------------------
-
-  // ตัวอย่าง A: ดึงข้อมูลสถานะ/การจองทั้งหมด (action: 'state')
-  async function loadData() {
-    const res = await sendToBackend("state");
-    if (res.ok) {
-      console.log("รายการเทอม:", res.terms);
-      console.log("รายการจอง:", res.bookings);
-    } else {
-      console.error("โหลดข้อมูลไม่สำเร็จ:", res.error);
-    }
-  }
-
-  // ตัวอย่าง B: กดจองวันเรียน (action: 'book')
-  async function makeBooking() {
-    const bookingData = {
-      term: "t12345",         // ID ของเทอม
-      key: "CS101-1",         // รหัสวิชา-เซค
-      date: "2026-10-15",     // วันที่ (YYYY-MM-DD)
-      s: 540,                 // เวลาเริ่ม (นับเป็นนาที เช่น 09:00 = 540 นาที)
-      e: 720,                 // เวลาจบ (เช่น 12:00 = 720 นาที)
-      by: "นายสมชาย"          // ชื่อผู้จอง
-    };
-
-    const res = await sendToBackend("book", bookingData);
-    if (res.ok) {
-      alert("จองสำเร็จเรียบร้อย!");
-    } else {
-      alert("เกิดข้อผิดพลาด: " + res.error);
-    }
-  }
-</script>
 </script></body></html>
