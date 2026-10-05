@@ -328,4 +328,63 @@ refresh();draw();applyLang();
 if(CFG.url&&CFG.code)poll();else $('cfgd').open=true;
 setInterval(()=>{if(!document.hidden)poll()},10000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
+  <script>
+  // 1. กำหนด URL และ Access Code ให้ตรงกับที่คุณตั้งไว้
+  const API_URL = "https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec";
+  const ACCESS_CODE = "รหัสเข้าใช้ที่ตั้งในScriptProperties"; // ต้องตรงกับ ACCESS_CODE ใน Apps Script
+
+  // 2. ฟังก์ชันกลางสำหรับส่งข้อมูลไปยัง Apps Script
+  async function sendToBackend(actionName, data = {}) {
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          code: ACCESS_CODE,  // รหัสผ่านเข้าใช้งานระบบ
+          action: actionName, // ชื่องานที่ต้องการให้ Apps Script ทำ
+          ...data             // ข้อมูลอื่นๆ ที่ส่งไป
+        })
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (err) {
+      console.error("เกิดข้อผิดพลาดในการเชื่อมต่อ:", err);
+      return { ok: false, error: "network_error" };
+    }
+  }
+
+  // ----------------------------------------------------
+  // 3. ตัวอย่างการเรียกใช้งานฟังก์ชันในรูปแบบต่างๆ
+  // ----------------------------------------------------
+
+  // ตัวอย่าง A: ดึงข้อมูลสถานะ/การจองทั้งหมด (action: 'state')
+  async function loadData() {
+    const res = await sendToBackend("state");
+    if (res.ok) {
+      console.log("รายการเทอม:", res.terms);
+      console.log("รายการจอง:", res.bookings);
+    } else {
+      console.error("โหลดข้อมูลไม่สำเร็จ:", res.error);
+    }
+  }
+
+  // ตัวอย่าง B: กดจองวันเรียน (action: 'book')
+  async function makeBooking() {
+    const bookingData = {
+      term: "t12345",         // ID ของเทอม
+      key: "CS101-1",         // รหัสวิชา-เซค
+      date: "2026-10-15",     // วันที่ (YYYY-MM-DD)
+      s: 540,                 // เวลาเริ่ม (นับเป็นนาที เช่น 09:00 = 540 นาที)
+      e: 720,                 // เวลาจบ (เช่น 12:00 = 720 นาที)
+      by: "นายสมชาย"          // ชื่อผู้จอง
+    };
+
+    const res = await sendToBackend("book", bookingData);
+    if (res.ok) {
+      alert("จองสำเร็จเรียบร้อย!");
+    } else {
+      alert("เกิดข้อผิดพลาด: " + res.error);
+    }
+  }
+</script>
 </script></body></html>
