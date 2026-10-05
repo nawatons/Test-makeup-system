@@ -145,7 +145,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 </main>
 <script>
-const API_URL='';// วางที่อยู่ Web App ของ Apps Script ที่นี่ (ดู README)
+const API_URL='https://script.google.com/macros/s/AKfycbwdEEnMMDo5XWXQhiA0NNCQkKZto8sEajGVBsA0LcfVPaoff8YXiuEBY_0M2_ZHkkEw/exec';// วางที่อยู่ Web App ของ Apps Script ที่นี่ (ดู README)
 const $=i=>document.getElementById(i),DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],TH=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 let secs=[],raw=[],booked=[],cancelled=[],DB={terms:[],cur:null},CFG={url:API_URL,code:'',who:''},ME={admin:false,ok:false},SV=null,BV=null,TOK=null,want=null,IMP=[];
 try{DB.cur=localStorage.getItem('mkcur');CFG.code=localStorage.getItem('mkcode')||'';CFG.who=localStorage.getItem('mkwho')||'';if(!CFG.url)CFG.url=localStorage.getItem('mkurl')||'';TOK=sessionStorage.getItem('mktok')}catch(e){}
