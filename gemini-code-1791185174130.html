@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ระบบหาวันเรียนชดเชย</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg:#f3f5f7;--card:#fff;--tx:#18222e;--mut:#5f6c7b;--bd:#d9dfe6;--ac:#0d6b6e;--acbg:#dff1f1;--ok:#11703f;--okbg:#e0f4e9;--wn:#8f5200;--wnbg:#fbeed6;--rgbg:#dcebfb;--rg:#1c5fa8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11161c;--card:#1a212a;--tx:#e5e9ee;--mut:#94a0ae;--bd:#2b3540;--ac:#5cc8ca;--acbg:#12302f;--ok:#63d59a;--okbg:#12301f;--wn:#f0b45c;--wnbg:#34260f;--rgbg:#16304d;--rg:#8ab8f0}}
+:root[data-theme="dark"]{--bg:#11161c;--card:#1a212a;--tx:#e5e9ee;--mut:#94a0ae;--bd:#2b3540;--ac:#5cc8ca;--acbg:#12302f;--ok:#63d59a;--okbg:#12301f;--wn:#f0b45c;--wnbg:#34260f;--rgbg:#16304d;--rg:#8ab8f0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.55 "Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:0 0 10px}
+.sub{color:var(--mut);margin:0 0 18px}
+.grid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 3px}
+input,select,textarea,button{font:inherit;color:var(--tx)}
+input[type=date],input[type=time],input[type=number],select,textarea{width:100%;padding:7px 9px;border:1px solid var(--bd);border-radius:7px;background:var(--bg)}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.days{display:flex;flex-wrap:wrap;gap:6px}.days label{display:flex;align-items:center;gap:4px;margin:0;color:var(--tx);border:1px solid var(--bd);border-radius:7px;padding:4px 9px}
+button{cursor:pointer;border:1px solid var(--bd);background:var(--card);border-radius:7px;padding:7px 13px}
+button.p{background:var(--ac);border-color:var(--ac);color:var(--card);font-weight:600;width:100%;margin-top:14px;padding:10px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+#drop{border:2px dashed var(--bd);border-radius:10px;padding:18px;text-align:center;color:var(--mut);cursor:pointer}
+#drop.on{border-color:var(--ac);background:var(--acbg)}
+.note{font-size:13px;color:var(--mut);margin-top:8px}
+.res{border:1px solid var(--bd);border-radius:8px;padding:9px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.res details{flex-basis:100%;font-size:13px;color:var(--mut)}
+.res b{font-weight:600}
+.tag{font-size:12px;border-radius:99px;padding:2px 10px;font-weight:600}
+.ok{background:var(--okbg);color:var(--ok)}.wn{background:var(--wnbg);color:var(--wn)}
+.bk{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd);font-size:14px}
+.tbl{overflow-x:auto}
+.wg{border-collapse:collapse;width:100%;min-width:640px;table-layout:fixed}.wg th,.wg td{border:1px solid var(--bd);padding:6px;vertical-align:top;font-size:12px}.wg th{background:var(--bg);font-weight:600}
+.wg td[data-k]{cursor:pointer}.wg td[data-k]:hover,.wg td[data-k]:focus-visible{outline:2px solid var(--ac);outline-offset:-2px}
+.wg .dt{font-weight:400;color:var(--mut)}.c-ok{background:var(--okbg)}.c-wn{background:var(--wnbg)}.hd{background:var(--bg);color:var(--mut)}
+.wg small{display:block;color:var(--mut);line-height:1.35}.bkd{font-weight:600;color:var(--ac)}
+.c-reg{background:var(--rgbg)}.c-reg b{color:var(--rg)}.c-canc{background:var(--bg);color:var(--mut);box-shadow:inset 0 0 0 2px var(--rgbg)}
+.c-bk{background:#fce4ec}.c-bk b{color:#c2185b}
+.iw input[type=text],.iw input[type=password],input[type=text].f,input[type=password].f{width:100%;padding:7px 9px;border:1px solid var(--bd);border-radius:7px;background:var(--bg)}
+.tabs{display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--bd);padding-bottom:8px;overflow-x:auto}
+.tab{background:var(--bg);border:1px solid var(--bd);font-size:15px;color:var(--mut);padding:8px 16px;cursor:pointer;border-radius:8px;white-space:nowrap}
+.tab.active{background:var(--ac);color:var(--card);border-color:var(--ac);font-weight:600}
+.cmp-box{border:1px solid var(--bd);padding:12px;border-radius:8px;height:250px;overflow-y:auto;background:var(--bg)}
+</style>
+<meta name="robots" content="noindex"></head><body><main>
+<div class="row" style="align-items:center;gap:12px"><h1 style="flex:1">ระบบหาวันเรียนชดเชย</h1><select id="lg" aria-label="Language" style="flex:0 0 auto;width:auto"><option value="th">ไทย</option><option value="en">English</option></select></div>
+<p class="sub">เลือกกลุ่มเรียนที่งดสอน แล้วระบบจะหาวันและเวลาที่ไม่มีนักศึกษาในกลุ่มนั้นติดเรียนกลุ่มอื่น ข้อมูลเก็บร่วมกันใน Google Sheet ของออฟฟิศ</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('main')" id="tab-main">📅 หน้าหลัก (จัดตาราง)</button>
+  <button class="tab" onclick="switchTab('history')" id="tab-history">⏱️ ประวัติการจอง/ยกเลิก</button>
+  <button class="tab" onclick="switchTab('compare')" id="tab-compare">🔍 เปรียบเทียบรายชื่อ</button>
+</div>
+
+<div id="view-main">
+  <div class="grid">
+    <div>
+      <div class="card"><details id="cfgd"><summary><b>การเชื่อมต่อ</b></summary>
+      <div id="urlrow" hidden><label>ที่อยู่ระบบหลังบ้าน (Web App URL)</label><input type="text" class="f" id="curl"></div>
+      <label>รหัสเข้าใช้ของออฟฟิศ</label><input type="password" class="f" id="ccode" autocomplete="off">
+      <label>ชื่อของคุณ (ใช้บันทึกว่าใครเป็นคนจอง)</label><input type="text" class="f" id="cwho" maxlength="30">
+      <button class="p" id="csave">เชื่อมต่อ</button></details>
+      <div class="note" id="role"></div><div class="note" id="msg" role="status"></div></div>
+      
+      <div class="card"><h2>1. เลือกเทอม</h2>
+      <select id="tsel"></select>
+      <div class="note" id="st"></div><div class="note" id="trange"></div><div class="note" id="sync"></div>
+      <details id="lock" style="margin-top:10px"><summary>ผู้ดูแลระบบ</summary>
+      <div id="lin"><label>ชื่อผู้ใช้ผู้ดูแลระบบ</label><input type="text" class="f" id="auser" autocomplete="off">
+      <label>รหัสผ่านผู้ดูแลระบบ</label><input type="password" class="f" id="apw" autocomplete="off">
+      <button id="login" style="margin-top:8px">เข้าสู่ระบบผู้ดูแล</button></div>
+      <div id="lout" hidden style="margin-top:8px"><button id="logout">ออกจากระบบผู้ดูแล</button></div></details></div>
+      
+      <div class="card" id="adm" hidden><h2>ผู้ดูแลระบบ</h2>
+      <label>สร้างเทอมใหม่</label>
+      <input type="text" class="f" id="tname" placeholder="ชื่อเทอมใหม่ เช่น 1/2569">
+      <div class="row"><div><label>เริ่มเทอม</label><input type="date" id="tstart"></div><div><label>สิ้นสุดเทอม</label><input type="date" id="tend"></div></div>
+      <button class="p" id="tnew">สร้างเทอม</button>
+      <label>แก้ไขวันที่ของเทอมที่เลือก</label>
+      <div class="row"><input type="date" id="estart"><input type="date" id="eend"></div>
+      <div class="row" style="margin-top:8px"><button id="tupd">บันทึกวันที่</button><button id="tdel">ลบเทอมนี้</button></div>
+      <label>อัปโหลดรายชื่อเข้าเทอมที่เลือก</label>
+      <div id="drop" tabindex="0">ลากไฟล์ .xlsx หรือ .zip ของทั้งโฟลเดอร์มาวางที่นี่<br>หรือคลิกเพื่อเลือกไฟล์</div>
+      <input id="file" type="file" multiple accept=".xlsx,.xls,.csv,.zip" hidden></div>
+      
+      <div class="card"><h2>2. ตั้งค่าการค้นหา</h2>
+      <label>กลุ่มเรียนที่งดสอน</label><select id="sec"></select>
+      <div class="row"><div><label>ค้นหาตั้งแต่วันที่</label><input type="date" id="d1"></div><div><label>ถึงวันที่</label><input type="date" id="d2"></div></div>
+      <label>วันที่เรียนชดเชยได้</label>
+      <div class="days" id="days"></div>
+      <label>เวลาเริ่มคาบ (คาบละ 3 ชั่วโมง)</label>
+      <div class="days" id="pers"></div>
+      <label>ยอมให้ชนได้สูงสุด (คน)</label><input type="number" id="mx" value="0" min="0">
+      <label>วันหยุด (บรรทัดละ 1 วัน รูปแบบ 2026-10-13)</label><textarea id="hol" rows="3"></textarea>
+      <button class="p" id="go">ค้นหาวันเรียนชดเชย</button></div>
+    </div>
+    
+    <div>
+      <div class="card"><h2>ตารางรายสัปดาห์</h2>
+      <div class="row" style="align-items:center;margin-bottom:10px"><button id="pw">สัปดาห์ก่อน</button><b id="wl" style="text-align:center;flex:2"></b><button id="nw">สัปดาห์ถัดไป</button></div>
+      <div class="tbl" id="wk"></div>
+      <div class="note">สีฟ้า = คาบเรียนปกติ สีเขียว = ไม่มีคนชน สีส้ม = มีคนชน <b style="color:#c2185b">สีชมพู = คาบที่จองแล้ว</b> คลิกเพื่อจองหรือยกเลิก</div></div>
+      <div class="card"><h2>ผลการค้นหา</h2><div id="out" class="note">เลือกกลุ่มเรียนและกดค้นหา</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="view-history" hidden>
+  <div class="grid">
+    <div>
+      <div class="card"><h2>คาบปกติที่ยกเลิก</h2><div id="cn" class="note">ยังไม่มี</div></div>
+    </div>
+    <div>
+      <div class="card"><h2>นัดชดเชยที่จองไว้</h2><div id="bk" class="note">ยังไม่มี</div>
+      <div class="row" style="margin-top:10px"><button id="csv">แสดงเป็น CSV (คัดลอกได้)</button><button id="clr">ล้างทั้งหมด</button></div>
+      <div class="note">นัดที่จองไว้จะถูกนับเป็นเวลาที่นักศึกษาไม่ว่างเมื่อค้นหากลุ่มอื่น ระบบยังไม่ตรวจห้องเรียนและอาจารย์ผู้สอน</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="view-compare" hidden>
+  <div class="card">
+    <h2>เปรียบเทียบรายชื่อข้ามวิชา/กลุ่มเรียน</h2>
+    <p class="sub">เลือกวิชาหรือกลุ่มเรียนที่ต้องการเทียบกัน (เลือกได้หลายกลุ่มในแต่ละฝั่ง) เพื่อดูจำนวนนักศึกษาที่ลงทะเบียนซ้ำซ้อนกัน</p>
+    <div class="grid">
+      <div>
+        <label>ฝั่งที่ 1</label>
+        <div id="cmp-g1" class="cmp-box"></div>
+      </div>
+      <div>
+        <label>ฝั่งที่ 2</label>
+        <div id="cmp-g2" class="cmp-box"></div>
+      </div>
+    </div>
+    <button class="p" onclick="compareSections()">เปรียบเทียบข้อมูล</button>
+    <div id="cmp-out" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+</main>
+<script>
+const API_URL='';// วางที่อยู่ Web App ของ Apps Script ที่นี่ (ดู README)
+const $=i=>document.getElementById(i),DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],TH=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+let secs=[],raw=[],booked=[],cancelled=[],DB={terms:[],cur:null},CFG={url:API_URL,code:'',who:''},ME={admin:false,ok:false},SV=null,BV=null,TOK=null,want=null,IMP=[];
+try{DB.cur=localStorage.getItem('mkcur');CFG.code=localStorage.getItem('mkcode')||'';CFG.who=localStorage.getItem('mkwho')||'';if(!CFG.url)CFG.url=localStorage.getItem('mkurl')||'';TOK=sessionStorage.getItem('mktok')}catch(e){}
+const T=()=>DB.terms.find(t=>t.id===DB.cur);
+function loadTerm(){secs=raw.map(s=>({...s,ids:new Set(String(s.ids).split(',').filter(Boolean))}));booked=allB;cancelled=allC}
+let allB=[],allC=[],mt=0;function say(m){$('msg').textContent=m;clearTimeout(mt);if(m)mt=setTimeout(()=>say(''),8000)}
+const ERR={bad_code:'รหัสเข้าใช้ไม่ถูกต้อง',not_configured:'ผู้ดูแลยังตั้งค่าระบบหลังบ้านไม่ครบ',locked:'ใส่รหัสผิดหลายครั้ง ระบบล็อกชั่วคราว ลองใหม่ใน 5 นาที',not_admin:'ต้องเข้าสู่ระบบผู้ดูแลก่อน',bad_login:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',bad_input:'ข้อมูลที่ส่งไปไม่ถูกต้อง',out_of_term:'วันที่นี้อยู่นอกช่วงเทอม',busy:'ระบบกำลังบันทึกข้อมูลของคนอื่น โปรดลองใหม่',server:'ระบบหลังบ้านขัดข้อง'};
+async function call(action,body){if(!CFG.url||!CFG.code){say('กรอกการเชื่อมต่อก่อน');return null}
+try{const r=await fetch(CFG.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,code:CFG.code,token:TOK,...body})});
+const j=await r.json();if(j.ok)return j;
+say(ERR[j.error]||ERR.server);if(j.error==='not_admin'){TOK=null;ME.admin=false;gate()}if(j.error==='bad_code'||j.error==='not_configured')ME.ok=false;return null}
+catch(e){say('เชื่อมต่อระบบหลังบ้านไม่ได้ ตรวจสอบอินเทอร์เน็ตและที่อยู่ระบบ');return null}}
+let polling=false;
+async function poll(){if(polling||!CFG.url||!CFG.code)return;polling=true;const req=DB.cur;
+const j=await call('state',{term:req,sv:SV,bv:BV});polling=false;if(!j)return;
+const first=!ME.ok,adm=ME.admin!==j.admin;ME.ok=true;ME.admin=j.admin;if(!j.admin&&TOK){TOK=null;try{sessionStorage.removeItem('mktok')}catch(e){}}
+if(j.terms){DB.terms=j.terms.sort((a,b)=>a.name<b.name?-1:1);if(want&&DB.terms.some(x=>x.id===want)){DB.cur=want;want=null}else if(!T())DB.cur=DB.terms[0]?DB.terms[0].id:null}
+if(DB.cur!==req){raw=[];allB=[];allC=[];SV=BV=null;loadTerm();refresh();draw();setTimeout(poll,0);return}
+const ch=!!(j.terms||j.sections||j.bookings||j.cancels);
+if(j.sections)raw=j.sections;if(j.bookings)allB=j.bookings;if(j.cancels)allC=j.cancels;SV=j.sv;BV=j.bv;
+$('sync').textContent='ซิงก์ล่าสุด '+new Date().toLocaleTimeString('en-GB');
+if(first)$('cfgd').open=false;
+if(ch||first||adm){loadTerm();refresh();draw()}}
+async function mut(act,payload){const j=await call(act,{term:DB.cur,by:CFG.who||'ไม่ระบุชื่อ',...payload});if(!j)return;
+if(j.bookings)allB=j.bookings;if(j.cancels)allC=j.cancels;if(j.bv)BV=j.bv;loadTerm();draw();renderWeek()}
+const tm=t=>{const[h,m]=t.replace('.',':').split(':').map(Number);return h*60+m},fm=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
+const key=s=>s.code+'-'+s.sec,esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const pd=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+$('days').innerHTML=[1,2,3,4,5,6,0].map(i=>`<label><input type="checkbox" value="${i}" ${i>0&&i<6?'checked':''}>${TH[i].slice(0,3)}.</label>`).join('');
+const today=new Date(),end=new Date(today.getTime()+45*864e5);$('d1').value=iso(today);$('d2').value=iso(end);
+function parse(rows,name){const m0=name.match(/^([A-Za-z]{2}\d{3})/),code=m0?m0[1].toUpperCase():name;let cur=null,title='',out=[];
+for(const r of rows){const line=r.filter(x=>x!=='').join(' ').replace(/\[merged\]/g,'').trim();
+const m=line.match(/Section\s+(\d+)\s+(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\w*\s+(\d{1,2}[:.]\d{2})\s*-\s*(\d{1,2}[:.]\d{2})/i);
+if(m){cur={code,sec:m[1],title,day:DAYS.findIndex(d=>d.toLowerCase()==m[2].slice(0,3).toLowerCase()),s:tm(m[3]),e:tm(m[4]),ids:new Set()};out.push(cur);continue}
+if(!cur&&line.startsWith(code))title=line;
+if(cur)for(const c of r){const v=String(c).trim();if(/^\d{10}$/.test(v)){cur.ids.add(v);break}}}
+return out}
+async function addBuf(buf,name){const wb=XLSX.read(buf,{type:'array'}),ws=wb.Sheets['Classlist']||wb.Sheets[wb.SheetNames[0]];
+const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+for(const s of parse(rows,name.replace(/\.[^.]+$/,''))){IMP=IMP.filter(x=>key(x)!==key(s));IMP.push(s)}}
+async function load(files){if(!ME.admin||!T()){say(ME.admin?'สร้างเทอมก่อน แล้วจึงอัปโหลดรายชื่อ':'เฉพาะผู้ดูแลระบบที่นำเข้าข้อมูลได้');return}
+say('กำลังอ่านไฟล์...');let bad=0;IMP=[];
+for(const f of files){try{if(/\.zip$/i.test(f.name)){const z=await JSZip.loadAsync(f);
+for(const n in z.files){if(!z.files[n].dir&&/\.(xlsx|xls|csv)$/i.test(n))await addBuf(await z.files[n].async('arraybuffer'),n.split('/').pop())}}
+else await addBuf(await f.arrayBuffer(),f.name)}catch(e){bad++}}
+const sections=IMP.map(s=>({code:s.code,sec:s.sec,day:s.day,s:s.s,e:s.e,ids:[...s.ids].join(',')}));
+if(!sections.length){say('ไม่พบข้อมูลกลุ่มเรียนในไฟล์');return}
+say('กำลังบันทึกขึ้นระบบ...');const j=await call('importSections',{term:DB.cur,sections});
+if(j){SV=null;await poll();say(bad?`อ่านไฟล์ไม่ได้ ${bad} ไฟล์`:'นำเข้าข้อมูลเรียบร้อย')}}
+function refresh(){clampWk();syncRange();const t=T(),st=new Set(),v=$('sec').value;secs.forEach(s=>s.ids.forEach(i=>st.add(i)));
+$('tsel').innerHTML=DB.terms.map(x=>`<option value="${esc(x.id)}" ${x.id===DB.cur?'selected':''}>${esc(x.name)}</option>`).join('')||'<option value="">ยังไม่มีเทอม</option>';
+$('st').textContent=t?`เทอม ${t.name}: ${secs.length} กลุ่มเรียน นักศึกษา ${st.size} คน`:!ME.ok?'กรอกการเชื่อมต่อด้านบนแล้วกดเชื่อมต่อ':ME.admin?'สร้างเทอมก่อน แล้วจึงอัปโหลดรายชื่อ':'ยังไม่มีข้อมูล รอผู้ดูแลระบบนำเข้าข้อมูล';
+$('sec').innerHTML=secs.map(s=>`<option value="${esc(key(s))}">${esc(key(s))} · ${TH[s.day]} ${fm(s.s)}-${fm(s.e)} (${s.ids.size} คน)</option>`).join('');if(secs.some(s=>key(s)===v))$('sec').value=v;
+gate();renderWeek();if(!$('view-compare').hidden)renderCompareList()}
+function gate(){$('adm').hidden=!ME.admin;$('clr').hidden=!ME.admin;$('lin').hidden=ME.admin;$('lout').hidden=!ME.admin;$('urlrow').hidden=!!API_URL;
+$('role').textContent=!CFG.url?'ยังไม่ได้ตั้งค่าที่อยู่ระบบหลังบ้าน':!ME.ok?'ยังไม่ได้เชื่อมต่อ':ME.admin?'สถานะ: ผู้ดูแลระบบ แก้ไขเทอมและนำเข้าข้อมูลได้':'สถานะ: ผู้ใช้ทั่วไป เพิ่มและยกเลิกวันเรียนได้'}
+function pick(){renderWeek()}
+$('sec').onchange=pick;
+const dz=$('drop');dz.onclick=()=>$('file').click();dz.onkeydown=e=>{if(e.key==='Enter')$('file').click()};$('file').onchange=e=>load([...e.target.files]);
+dz.ondragover=e=>{e.preventDefault();dz.classList.add('on')};dz.ondragleave=()=>dz.classList.remove('on');
+dz.ondrop=e=>{e.preventDefault();dz.classList.remove('on');load([...e.dataTransfer.files])};
+function busy(date){const d=date.getDay(),k=iso(date),L=[];
+for(const s of secs)if(s.day===d&&!cancelled.some(c=>c.key===key(s)&&c.date===k))L.push({n:key(s),s:s.s,e:s.e,ids:s.ids});
+for(const b of booked)if(b.date===k){const s=secs.find(x=>key(x)===b.key);if(s)L.push({n:'ชดเชย '+b.key,s:b.s,e:b.e,ids:s.ids})}return L}
+const DU=180,PS=[540,780,960,1020],home=c=>PS.reduce((a,b)=>Math.abs(b-c.s)<Math.abs(a-c.s)?b:a);
+$('pers').innerHTML=PS.map(p=>`<label><input type="checkbox" value="${p}" checked>${fm(p)}</label>`).join('');
+const dayList=()=>[...document.querySelectorAll('#days input:checked')].map(i=>+i.value),periods=()=>[...document.querySelectorAll('#pers input:checked')].map(i=>+i.value),hols=()=>new Set($('hol').value.split(/\s+/).filter(Boolean));
+const nd=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n),dm=k=>k.split('-').reverse().join('/');
+function ev(d,s,e,cs){const hit=[],u=new Set();
+for(const b of busy(d)){if(b.s>=e||b.e<=s)continue;const c=[...cs.ids].filter(i=>b.ids.has(i));if(c.length){hit.push([b.n,c.length]);c.forEach(i=>u.add(i))}}
+return{n:u.size,hit}}
+let wk=nd(new Date(),0);wk=nd(wk,-((wk.getDay()+6)%7));
+const rng=()=>{const t=T();return t&&t.start&&t.end?[t.start,t.end]:null},inTerm=k=>{const r=rng();return !r||(k>=r[0]&&k<=r[1])};
+const weekOK=n=>{const r=rng();return !r||(iso(nd(n,6))>=r[0]&&iso(n)<=r[1])};
+function clampWk(){const r=rng();if(!r||weekOK(wk))return;const t=iso(new Date()),k=t<r[0]?r[0]:t>r[1]?r[1]:t,d=pd(k);wk=nd(d,-((d.getDay()+6)%7))}
+let applied='';
+function syncRange(){const t=T(),r=rng(),sig=[DB.cur,r&&r[0],r&&r[1]].join('|');if(sig===applied)return;applied=sig;
+if(r){const t0=iso(new Date());$('d1').value=(t0<r[0]||t0>r[1])?r[0]:t0;$('d2').value=r[1];$('estart').value=r[0];$('eend').value=r[1]}else{$('estart').value='';$('eend').value=''}$('trange').textContent=r?'ช่วงเทอม '+dm(r[0])+' - '+dm(r[1]):(t?'ยังไม่ได้ตั้งช่วงวันที่':'')}
+function renderWeek(){const cs=secs.find(x=>key(x)===$('sec').value),el=$('wk');$('wl').textContent=dm(iso(wk))+' - '+dm(iso(nd(wk,6)));
+if(!cs){el.innerHTML='<div class="note">โหลดรายชื่อนักศึกษาก่อน</div>';return}
+const hol=hols(),dl=dayList(),D=[0,1,2,3,4,5,6].map(i=>nd(wk,i)).filter(d=>dl.includes(d.getDay())&&inTerm(iso(d)));
+if(!D.length&&rng()){el.innerHTML='<div class="note">สัปดาห์นี้อยู่นอกช่วงเทอม</div>';return}
+let h='<table class="wg"><tr><th></th>'+D.map(d=>`<th>${TH[d.getDay()]}<br><span class="dt">${dm(iso(d)).slice(0,5)}</span></th>`).join('')+'</tr>';
+for(const s of periods()){h+=`<tr><th>${fm(s)}-${fm(s+DU)}</th>`;
+for(const d of D){const k=iso(d);if(hol.has(k)){h+='<td class="hd">วันหยุด</td>';continue}
+const own=cs.day===d.getDay()&&s===home(cs);
+if(own){const cn=cancelled.some(c=>c.key===key(cs)&&c.date===k);
+h+=cn?`<td tabindex="0" class="c-canc" data-k="${k}" data-s="${s}" data-reg="1"><b>ยกเลิกแล้ว · คลิกเพื่อคืนคาบ</b></td>`:`<td tabindex="0" class="c-reg" data-k="${k}" data-s="${s}" data-reg="1"><b>คาบเรียนปกติ</b>${cs.s!==s?`<small>${fm(cs.s)}-${fm(cs.e)}</small>`:''}<small>คลิกเพื่อยกเลิกคาบนี้</small></td>`;continue}
+const r=ev(d,s,s+DU,cs),bd=booked.some(b=>b.key===key(cs)&&b.date===k&&b.s===s);
+h+=`<td tabindex="0" class="${bd?'c-bk':r.n?'c-wn':'c-ok'}" data-k="${k}" data-s="${s}"><b>${r.n?'ชน '+r.n+' คน':'ไม่ชน'}</b>`+(bd?'<small class="bkd" style="color:#c2185b">จองแล้ว · คลิกเพื่อยกเลิก</small>':'')+
+r.hit.slice(0,4).map(x=>`<small>${esc(x[0])} · ${x[1]}</small>`).join('')+(r.hit.length>4?`<small>และอีก ${r.hit.length-4} กลุ่ม</small>`:'')+'</td>'}
+h+='</tr>'}
+el.innerHTML=h+'</table>'}
+function bookCell(e){const t=e.target.closest('td[data-k]'),cs=secs.find(x=>key(x)===$('sec').value);if(!t||!cs)return;
+const s=+t.dataset.s,k=t.dataset.k,K=key(cs);
+if(t.dataset.reg){mut(cancelled.some(c=>c.key===K&&c.date===k)?'uncancel':'cancel',{key:K,date:k,s:cs.s,e:cs.e});return}
+mut(booked.some(b=>b.key===K&&b.date===k&&b.s===s)?'unbook':'book',{key:K,date:k,s,e:s+DU})}
+$('wk').onclick=bookCell;$('wk').onkeydown=e=>{if(e.key==='Enter')bookCell(e)};
+$('pw').onclick=()=>{const n=nd(wk,-7);if(weekOK(n)){wk=n;renderWeek()}};$('nw').onclick=()=>{const n=nd(wk,7);if(weekOK(n)){wk=n;renderWeek()}};
+document.addEventListener('change',renderWeek);
+$('go').onclick=()=>{const cs=secs.find(x=>key(x)===$('sec').value);if(!cs){$('out').textContent='โหลดรายชื่อนักศึกษาก่อน';return}
+const mx=+$('mx').value||0,ok=dayList(),hol=hols(),res=[];
+for(let d=pd($('d1').value);d<=pd($('d2').value);d=nd(d,1)){
+if(!ok.includes(d.getDay())||hol.has(iso(d))||!inTerm(iso(d)))continue;
+for(const s of periods()){if(d.getDay()===cs.day&&s===home(cs)&&cancelled.some(c=>c.key===key(cs)&&c.date===iso(d)))continue;const r=ev(d,s,s+DU,cs);if(r.n<=mx)res.push({date:iso(d),wd:d.getDay(),s,e:s+DU,n:r.n,hit:r.hit})}}
+res.sort((a,b)=>a.n-b.n||(a.date<b.date?-1:a.date>b.date?1:a.s-b.s));
+if(!res.length){$('out').textContent='ไม่พบช่วงเวลาที่เข้าเงื่อนไข ลองขยายช่วงวันที่ เพิ่มวันเรียน หรือยอมให้ชนได้บางส่วน';return}
+{const f=pd(res[0].date);wk=nd(f,-((f.getDay()+6)%7));renderWeek()}
+const z=res.filter(r=>!r.n).length;
+$('out').className='';$('out').innerHTML=`<div class="note" style="margin:0 0 10px">พบ ${res.length} ช่วงเวลา (ไม่ชนเลย ${z}) แสดง 120 รายการแรก</div>`+res.slice(0,120).map((r,i)=>
+`<div class="res"><span><b>${TH[r.wd]} ${r.date.split('-').reverse().join('/')}</b> ${fm(r.s)}-${fm(r.e)}</span>
+<span><span class="tag ${r.n?'wn':'ok'}">${r.n?'ชน '+r.n+' คน':'ไม่ชน'}</span> <button data-i="${i}">${booked.some(x=>x.key===key(cs)&&x.date===r.date&&x.s===r.s)?'ยกเลิกจอง':'จอง'}</button></span>
+${r.n?`<details><summary>ดูรายละเอียด</summary>${r.hit.map(h=>esc(h[0])+' : '+h[1]+' คน').join('<br>')}</details>`:''}</div>`).join('');
+$('out').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{const r=res[+b.dataset.i],K=key(cs),has=()=>booked.some(x=>x.key===K&&x.date===r.date&&x.s===r.s);
+mut(has()?'unbook':'book',{key:K,date:r.date,s:r.s,e:r.e}).then(()=>{b.textContent=has()?'ยกเลิกจอง':'จอง'})})};
+function drawC(){const L=cancelled;$('cn').className=L.length?'':'note';
+$('cn').innerHTML=L.length?L.map((c,i)=>`<div class="bk"><span><b>${esc(c.key)}</b> ${dm(c.date)} ${fm(c.s)}-${fm(c.e)}${c.by?' · '+esc(c.by):''}</span><button data-c="${i}">คืนคาบ</button></div>`).join(''):'ยังไม่มี';
+$('cn').querySelectorAll('button[data-c]').forEach(x=>x.onclick=()=>{const c=cancelled[+x.dataset.c];mut('uncancel',{key:c.key,date:c.date})})}
+function draw(){drawC();$('bk').className=booked.length?'':'note';$('bk').innerHTML=booked.length?booked.map((b,i)=>`<div class="bk"><span><b>${esc(b.key)}</b> ${b.date.split('-').reverse().join('/')} ${fm(b.s)}-${fm(b.e)}${b.by?' · '+esc(b.by):''}</span><button data-r="${i}">ยกเลิกจอง</button></div>`).join(''):'ยังไม่มี';
+$('bk').querySelectorAll('button[data-r]').forEach(x=>x.onclick=()=>{const b=booked[+x.dataset.r];mut('unbook',{key:b.key,date:b.date,s:b.s})})}
+$('clr').onclick=async()=>{if(!ME.admin)return;if(await call('clearBookings',{term:DB.cur})){BV=null;poll()}};$('csv').onclick=()=>{const t=(LG==='en'?'Section,Date,Start,End':'กลุ่มเรียน,วันที่,เริ่ม,เลิก')+'\n'+booked.map(b=>[b.key,b.date,fm(b.s),fm(b.e)].join(',')).join('\n');
+let x=$('cx');if(!x){x=document.createElement('textarea');x.id='cx';x.rows=6;x.readOnly=true;x.style.marginTop='10px';$('csv').parentNode.after(x)}x.value=t;x.select()};
+function setTerm(id){DB.cur=id;try{localStorage.setItem('mkcur',id)}catch(e){}raw=[];allB=[];allC=[];SV=BV=null;loadTerm();refresh();draw();$('out').className='note';$('out').textContent='เลือกกลุ่มเรียนและกดค้นหา';poll()}
+let dq=false;const rstDel=()=>{dq=false;$('tdel').textContent='ลบเทอมนี้'};
+$('tsel').onchange=()=>{rstDel();setTerm($('tsel').value)};
+$('tnew').onclick=async()=>{const n=$('tname').value.trim(),a=$('tstart').value,b=$('tend').value;if(!ME.admin||!n)return;
+if(!a||!b||a>b){say('กรอกวันที่เริ่มและสิ้นสุดเทอมให้ถูกต้อง');return}
+const j=await call('createTerm',{name:n,start:a,end:b});if(j){$('tname').value='';$('tstart').value='';$('tend').value='';want=j.id;SV=null;rstDel();poll()}};$('tupd').onclick=async()=>{const a=$('estart').value,b=$('eend').value;if(!ME.admin||!T())return;
+if(!a||!b||a>b){say('กรอกวันที่เริ่มและสิ้นสุดเทอมให้ถูกต้อง');return}
+if(await call('updateTerm',{id:DB.cur,start:a,end:b})){SV=null;applied='';poll()}};
+$('tdel').onclick=async()=>{if(!ME.admin\vert{}\vert{}!T())return;if(!dq){dq=true;$('tdel').textContent='กดอีกครั้งเพื่อลบเทอมนี้';return}
+rstDel();if(await call('deleteTerm',{id:DB.cur})){SV=null;poll()}};
+
+/* UI Tabs Logic */
+window.switchTab=t=>{['main','history','compare'].forEach(x=>{$('view-'+x).hidden=(x!==t);$('tab-'+x).classList.toggle('active',x===t)});if(t==='compare')renderCompareList()};
+window.renderCompareList=()=>{const html=secs.map((s,i)=>`<label style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd)"><input type="checkbox" value="${i}"> <span><b>${esc(key(s))}</b> <span class="dt">(${s.ids.size} คน)</span></span></label>`).join('');$('cmp-g1').innerHTML=html;$('cmp-g2').innerHTML=html;$('cmp-out').innerHTML=''};
+window.compareSections=()=>{
+  const g1=[...document.querySelectorAll('#cmp-g1 input:checked')].map(i=>secs[i.value]),g2=[...document.querySelectorAll('#cmp-g2 input:checked')].map(i=>secs[i.value]);
+  if(!g1.length||!g2.length){$('cmp-out').innerHTML='<div class="note">กรุณาเลือกกลุ่มเรียนทั้งฝั่ง 1 และฝั่ง 2</div>';return}
+  const ids1=new Set();g1.forEach(s=>s.ids.forEach(id=>ids1.add(id)));const ids2=new Set();g2.forEach(s=>s.ids.forEach(id=>ids2.add(id)));
+  const inter=[...ids1].filter(id=>ids2.has(id));
+  let outHtml=`<div class="res" style="background:var(--card);font-size:16px"><b>จำนวนนักศึกษาที่ชนกัน:</b> <span class="tag ${inter.length?'wn':'ok'}" style="font-size:15px">${inter.length} คน</span></div>`;
+  if(inter.length>0)outHtml+=`<div class="card" style="margin-top:10px"><b>รหัสนักศึกษาที่ชนกัน:</b><div class="note" style="line-height:1.6;user-select:all">${inter.join(', ')}</div></div>`;
+  $('cmp-out').innerHTML=outHtml;
+};
+
+let LG='th';try{LG=localStorage.getItem('mklang')==='en'?'en':'th'}catch(e){}
+const EN={'ระบบหาวันเรียนชดเชย':'Makeup Class Scheduler','เลือกกลุ่มเรียนที่งดสอน แล้วระบบจะหาวันและเวลาที่ไม่มีนักศึกษาในกลุ่มนั้นติดเรียนกลุ่มอื่น ข้อมูลเก็บร่วมกันใน Google Sheet ของออฟฟิศ':'Pick the cancelled section and the tool finds dates and times when none of its students have another class. Data is shared in the office Google Sheet.',
+'1. เลือกเทอม':'1. Choose a term','สร้างเทอม':'Create term','ลบเทอมนี้':'Delete this term','กดอีกครั้งเพื่อลบเทอมนี้':'Click again to delete this term','ยังไม่มีเทอม':'No terms yet',
+'2. อัปโหลดรายชื่อเข้าเทอมนี้':'2. Upload class lists to this term','ลากไฟล์ .xlsx หรือ .zip ของทั้งโฟลเดอร์มาวางที่นี่':'Drop .xlsx files or a .zip of the whole folder here','หรือคลิกเพื่อเลือกไฟล์':'or click to choose files','กำลังอ่านไฟล์...':'Reading files...','สร้างเทอมก่อน แล้วจึงอัปโหลดรายชื่อ':'Create a term first, then upload class lists',
+'2. ตั้งค่าการค้นหา':'2. Search settings','กลุ่มเรียนที่งดสอน':'Cancelled section','ค้นหาตั้งแต่วันที่':'Search from','ถึงวันที่':'To','วันที่เรียนชดเชยได้':'Days available for makeup','เวลาเริ่มคาบ (คาบละ 3 ชั่วโมง)':'Period start times (3 hours each)','ยอมให้ชนได้สูงสุด (คน)':'Max conflicts allowed (students)','วันหยุด (บรรทัดละ 1 วัน รูปแบบ 2026-10-13)':'Holidays (one date per line, e.g. 2026-10-13)','ค้นหาวันเรียนชดเชย':'Find makeup dates',
+'ตารางรายสัปดาห์':'Weekly schedule','สัปดาห์ก่อน':'Previous week','สัปดาห์ถัดไป':'Next week','ผลการค้นหา':'Results','เลือกกลุ่มเรียนและกดค้นหา':'Choose a section and press search','โหลดรายชื่อนักศึกษาก่อน':'Load student lists first','ไม่พบช่วงเวลาที่เข้าเงื่อนไข ลองขยายช่วงวันที่ เพิ่มวันเรียน หรือยอมให้ชนได้บางส่วน':'No matching slots. Try a wider date range, more days, or allow a few conflicts.',
+'ดูรายละเอียด':'Details','จองแล้ว · คลิกเพื่อยกเลิก':'Booked · click to cancel','ยกเลิกจอง':'Cancel booking','จอง':'Book','งดสอนวันนี้':'Cancelled today','วันหยุด':'Holiday','ไม่ชน':'No conflict','ชดเชย':'Makeup','สร้างเทอมใหม่':'Create a new term','เริ่มเทอม':'Term start','สิ้นสุดเทอม':'Term end','แก้ไขวันที่ของเทอมที่เลือก':'Edit dates of the selected term','บันทึกวันที่':'Save dates','ช่วงเทอม':'Term period','ยังไม่ได้ตั้งช่วงวันที่':'Term dates not set','สัปดาห์นี้อยู่นอกช่วงเทอม':'This week is outside the term','กรอกวันที่เริ่มและสิ้นสุดเทอมให้ถูกต้อง':'Enter valid term start and end dates','วันที่นี้อยู่นอกช่วงเทอม':'This date is outside the term','การเชื่อมต่อ':'Connection','ที่อยู่ระบบหลังบ้าน (Web App URL)':'Backend address (Web App URL)','รหัสเข้าใช้ของออฟฟิศ':'Office access code','ชื่อของคุณ (ใช้บันทึกว่าใครเป็นคนจอง)':'Your name (recorded with each booking)','เชื่อมต่อ':'Connect','ชื่อผู้ใช้ผู้ดูแลระบบ':'Admin username','รหัสผ่านผู้ดูแลระบบ':'Admin password','เข้าสู่ระบบผู้ดูแล':'Admin sign in','ออกจากระบบผู้ดูแล':'Admin sign out','ซิงก์ล่าสุด':'Last sync','ยังไม่ได้ตั้งค่าที่อยู่ระบบหลังบ้าน':'Backend address not set','ยังไม่ได้เชื่อมต่อ':'Not connected','กรอกการเชื่อมต่อด้านบนแล้วกดเชื่อมต่อ':'Fill in the connection above and press Connect','กรอกการเชื่อมต่อก่อน':'Fill in the connection first','ไม่พบข้อมูลกลุ่มเรียนในไฟล์':'No sections found in the files','กำลังบันทึกขึ้นระบบ...':'Saving to the system...','รหัสเข้าใช้ไม่ถูกต้อง':'Wrong access code','ผู้ดูแลยังตั้งค่าระบบหลังบ้านไม่ครบ':'The administrator has not finished configuring the backend','ใส่รหัสผิดหลายครั้ง ระบบล็อกชั่วคราว ลองใหม่ใน 5 นาที':'Too many wrong attempts. Locked temporarily, try again in 5 minutes.','ต้องเข้าสู่ระบบผู้ดูแลก่อน':'Admin sign-in required','ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง':'Wrong username or password','ข้อมูลที่ส่งไปไม่ถูกต้อง':'Invalid data sent','ระบบกำลังบันทึกข้อมูลของคนอื่น โปรดลองใหม่':'The system is saving someone else\'s data, please retry','ระบบหลังบ้านขัดข้อง':'Backend error','เชื่อมต่อระบบหลังบ้านไม่ได้ ตรวจสอบอินเทอร์เน็ตและที่อยู่ระบบ':'Cannot reach the backend. Check your internet and the address.','ข้อมูลเก็บร่วมกันใน Google Sheet ของออฟฟิศ':'Data is shared in the office Google Sheet','ไม่ระบุชื่อ':'Anonymous','ผู้ดูแลระบบ':'Administrator','อัปโหลดรายชื่อเข้าเทอมที่เลือก':'Upload class lists to the selected term','เฉพาะผู้ดูแลระบบที่นำเข้าข้อมูลได้':'Only administrators can import data','นำเข้าข้อมูลเรียบร้อย':'Import complete','กำลังเชื่อมต่อ...':'Connecting...','ยังไม่มีข้อมูล รอผู้ดูแลระบบนำเข้าข้อมูล':'No data yet. Waiting for an administrator to import it.','สถานะ: ผู้ดูแลระบบ แก้ไขเทอมและนำเข้าข้อมูลได้':'Status: Administrator. You can manage terms and import data.','สถานะ: ผู้ใช้ทั่วไป เพิ่มและยกเลิกวันเรียนได้':'Status: Regular user. You can add and cancel class days.','คาบเรียนปกติ':'Regular class','คลิกเพื่อยกเลิกคาบนี้':'Click to cancel this class','ยกเลิกแล้ว · คลิกเพื่อคืนคาบ':'Cancelled · click to restore','คาบปกติที่ยกเลิก':'Cancelled regular classes','คืนคาบ':'Restore',
+'นัดชดเชยที่จองไว้':'Booked makeup classes','ยังไม่มี':'None yet','แสดงเป็น CSV (คัดลอกได้)':'Show as CSV (copyable)','ล้างทั้งหมด':'Clear all','นัดที่จองไว้จะถูกนับเป็นเวลาที่นักศึกษาไม่ว่างเมื่อค้นหากลุ่มอื่น ระบบยังไม่ตรวจห้องเรียนและอาจารย์ผู้สอน':'Booked makeups count as busy time when searching other sections. Rooms and instructors are not checked.',
+'หน้าหลัก (จัดตาราง)':'Main (Schedule)','ประวัติการจอง/ยกเลิก':'History (Booked/Cancelled)','เปรียบเทียบรายชื่อ':'Compare Students','เปรียบเทียบรายชื่อข้ามวิชา/กลุ่มเรียน':'Compare Student Lists Across Sections','ฝั่งที่ 1':'Group 1','ฝั่งที่ 2':'Group 2','เปรียบเทียบข้อมูล':'Compare Data','จำนวนนักศึกษาที่ชนกัน:':'Conflicting Students:','รหัสนักศึกษาที่ชนกัน:':'Conflicting Student IDs:','กรุณาเลือกกลุ่มเรียนทั้งฝั่ง 1 และฝั่ง 2':'Please select sections from both Group 1 and 2',
+'อาทิตย์':'Sun','จันทร์':'Mon','อังคาร':'Tue','พุธ':'Wed','พฤหัสบดี':'Thu','ศุกร์':'Fri','เสาร์':'Sat'};
+const PAIRS=Object.entries(EN).sort((a,b)=>b[0].length-a[0].length);
+const RX=[[/เทอม (.+?): (\d+) กลุ่มเรียน นักศึกษา (\d+) คน/,'Term $1: $2 sections, $3 students'],[/พบ (\d+) ช่วงเวลา \(ไม่ชนเลย (\d+)\) แสดง 120 รายการแรก/,'$1 slots found ($2 with no conflicts), showing the first 120'],[/ชน (\d+) คน/g,'Conflict $1'],[/และอีก (\d+) กลุ่ม/,'and $1 more sections'],[/อ่านไฟล์ไม่ได้ (\d+) ไฟล์/,'Could not read $1 file(s)'],[/(\d+) คน/g,'$1 students']];
+const trs=s=>{for(const[r,e]of RX)s=s.replace(r,e);for(const[k,v]of PAIRS)if(s.includes(k))s=s.split(k).join(v);return s};
+const nodes=new WeakMap();
+function tn(n){const p=n.parentNode&&n.parentNode.nodeName;if(p==='SCRIPT'||p==='STYLE'||p==='TEXTAREA')return;
+let e=nodes.get(n),v=n.nodeValue;if(!e||(v!==e.th&&v!==e.en)){e={th:v,en:trs(v)};nodes.set(n,e)}
+const t=LG==='en'?e.en:e.th;if(v!==t)n.nodeValue=t}
+function walk(n){if(n.nodeType===3)tn(n);else if(n.nodeType===1){const w=document.createTreeWalker(n,4);let x;while(x=w.nextNode())tn(x)}}
+const mo=new MutationObserver(ms=>{mo.disconnect();for(const m of ms){if(m.type==='characterData')tn(m.target);else m.addedNodes.forEach(walk)}watch()});
+function watch(){mo.observe(document.body,{childList:true,characterData:true,subtree:true})}
+function applyLang(){mo.disconnect();document.documentElement.lang=LG;$('lg').value=LG;
+document.title=LG==='en'?EN['ระบบหาวันเรียนชดเชย']:'ระบบหาวันเรียนชดเชย';
+$('tname').placeholder=LG==='en'?'New term name, e.g. 1/2026':'ชื่อเทอมใหม่ เช่น 1/2569';walk(document.body);watch()}
+$('lg').onchange=()=>{LG=$('lg').value;try{localStorage.setItem('mklang',LG)}catch(e){}applyLang()};
+$('csave').onclick=()=>{CFG.url=API_URL\vert{}\vert{}$('curl').value.trim();CFG.code=$('ccode').value.trim();CFG.who=$('cwho').value.trim().slice(0,30);
+try{localStorage.setItem('mkcode',CFG.code);localStorage.setItem('mkwho',CFG.who);if(!API_URL)localStorage.setItem('mkurl',CFG.url)}catch(e){}
+ME.ok=false;SV=BV=null;gate();poll()};
+async function doLogin(){const j=await call('login',{user:$('auser').value.trim(),pass:$('apw').value});$('apw').value='';
+if(j){TOK=j.token;try{sessionStorage.setItem('mktok',TOK)}catch(e){}$('lock').open=false;SV=null;await poll()}}
+$('login').onclick=doLogin;$('apw').onkeydown=e=>{if(e.key==='Enter')doLogin()};
+$('logout').onclick=async()=>{await call('logout',{});TOK=null;try{sessionStorage.removeItem('mktok')}catch(e){}ME.admin=false;gate();refresh()};$('curl').value=CFG.url;$('ccode').value=CFG.code;$('cwho').value=CFG.who;
+refresh();draw();applyLang();
+if(CFG.url&&CFG.code)poll();else $('cfgd').open=true;
+setInterval(()=>{if(!document.hidden)poll()},10000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
+</script></body></html>
